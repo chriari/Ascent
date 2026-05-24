@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ascent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117; --card: #161b24; --border: #21262d; --text: #e4e8f0;
+    --text2: #69718b; --accent: #7c8cf8; --green: #4ade80;
+    --red: #f87171; --blue: #5b9bd5; --radius: 12px;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif;
+    background: var(--bg); color: var(--text); min-height: 100dvh;
+    padding-bottom: 72px; -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 18px 20px; display: flex; justify-content: space-between;
+    align-items: center; position: sticky; top: 0; background: var(--bg); z-index: 10;
+    backdrop-filter: blur(12px);
+  }
+  header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 18px;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: all .15s;
+  }
+  .btn:active { opacity: .7; transform: scale(.97); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:active { background: #6b7aee; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+  /* Grade grid */
+  .grade-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 16px; }
+  .grade-btn {
+    background: var(--card); border: 1.5px solid transparent; border-radius: var(--radius);
+    padding: 14px 8px; color: var(--text); font-size: 16px; font-weight: 700;
+    cursor: pointer; text-align: center; transition: all .15s;
+  }
+  .grade-btn:active { transform: scale(.95); }
+  .grade-btn.sel { border-color: var(--accent); background: rgba(124,140,248,.12); }
+
+  /* Tag chips */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; }
+  .tag {
+    background: var(--card); border: 1.5px solid transparent; border-radius: 20px;
+    padding: 10px 16px; color: var(--text); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .15s;
+  }
+  .tag:active { transform: scale(.95); }
+  .tag.sel { border-color: var(--accent); background: rgba(124,140,248,.12); }
+
+  /* Zone toggle */
+  .zone-toggle { display: flex; gap: 8px; padding: 0 16px; }
+  .zone-btn {
+    flex: 1; background: var(--card); border: 1.5px solid transparent; border-radius: var(--radius);
+    padding: 12px; color: var(--text); font-size: 15px; font-weight: 600;
+    cursor: pointer; text-align: center; transition: all .15s;
+  }
+  .zone-btn:active { transform: scale(.95); }
+  .zone-btn.sel { border-color: var(--accent); background: rgba(124,140,248,.12); }
+  .zone-btn .sub { font-size: 11px; color: var(--text2); display: block; margin-top: 2px; }
+
+  /* Cards */
+  .card { background: var(--card); border-radius: var(--radius); padding: 16px; margin: 8px 16px; }
+  .card h3 { font-size: 13px; color: var(--text2); margin-bottom: 8px; letter-spacing: .5px; }
+
+  /* Stats */
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; margin: 12px 0; }
+  .stat { background: var(--card); border-radius: var(--radius); padding: 16px 10px; text-align: center; }
+  .stat .num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat .label { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  /* Calendar */
+  .cal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4px; margin-bottom: 10px;
+  }
+  .cal-header .month-label { font-size: 15px; font-weight: 700; }
+  .cal-nav {
+    background: none; border: none; color: var(--text2); font-size: 16px;
+    cursor: pointer; padding: 4px 10px; border-radius: 6px; transition: all .15s;
+  }
+  .cal-nav:active { background: var(--border); color: var(--text); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+  .cal-grid .day-head { font-size: 10px; color: var(--text2); padding: 4px 0 6px; }
+  .cal-grid .day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 13px; font-weight: 600;
+  }
+  .cal-grid .day.today { box-shadow: inset 0 0 0 2px var(--accent); }
+  .cal-grid .day.has-climb { background: var(--accent); color: #fff; }
+  .cal-grid .day.muted { color: #2d3140; }
+
+  /* Climb item */
+  .climb-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid var(--border); font-size: 15px;
+  }
+  .climb-item:last-child { border-bottom: none; }
+  .grade-badge {
+    background: var(--accent); color: #fff; border-radius: 6px;
+    padding: 4px 8px; font-size: 13px; font-weight: 700; min-width: 36px; text-align: center;
+  }
+  .grade-badge.send { background: var(--blue); }
+  .grade-badge.project { background: #7c6ff7; }
+  .zone-badge {
+    font-size: 11px; color: var(--text2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 5px; margin-left: 4px;
+  }
+
+  /* Bottom nav */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: rgba(22,27,36,.92);
+    display: flex; border-top: 1px solid var(--border); z-index: 10;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  nav button {
+    flex: 1; background: none; border: none; color: var(--text2);
+    padding: 8px 6px 8px; font-size: 11px; cursor: pointer; transition: color .2s;
+  }
+  nav button.active { color: var(--accent); }
+  nav button .nav-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+  /* Views */
+  .view { display: none; padding: 0 0 20px; }
+  .view.active { display: block; }
+
+  /* Goal bar */
+  .goal-bar { height: 8px; background: var(--border); border-radius: 4px; margin-top: 8px; overflow: hidden; }
+  .goal-bar .fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width .3s; }
+
+  /* Big progress */
+  .big-progress { text-align: center; padding: 8px 0 4px; }
+  .big-progress .done { font-size: 48px; font-weight: 900; color: var(--accent); }
+  .big-progress .sep { font-size: 24px; color: var(--text2); margin: 0 4px; }
+  .big-progress .target { font-size: 24px; color: var(--text2); font-weight: 700; }
+  .big-progress .unit { font-size: 14px; color: var(--text2); margin-left: 2px; }
+
+  .btn-full { width: calc(100% - 32px); margin: 0 16px; padding: 14px; font-size: 16px; }
+
+  .meta-row { display: flex; gap: 8px; padding: 0 16px; }
+  .meta-row .input {
+    flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; color: var(--text); font-size: 15px;
+  }
+  .meta-row .input[type="date"] { color-scheme: dark; }
+
+  /* History tabs */
+  .history-tabs { display: flex; gap: 4px; padding: 0 16px; margin-bottom: 12px; }
+  .history-tab {
+    flex: 1; background: var(--card); border: 1.5px solid transparent; border-radius: 20px;
+    padding: 8px; color: var(--text2); font-size: 13px; font-weight: 600;
+    cursor: pointer; text-align: center; transition: all .15s;
+  }
+  .history-tab.sel { border-color: var(--accent); color: var(--accent); background: rgba(124,140,248,.08); }
+
+  .text-center { text-align: center; }
+  .mt-8 { margin-top: 8px; }
+  .mt-16 { margin-top: 16px; }
+  .mb-8 { margin-bottom: 8px; }
+  .text-sm { font-size: 13px; color: var(--text2); }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 100; align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 16px 16px 0 0; padding: 20px;
+    width: 100%; max-height: 70dvh; overflow-y: auto;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 16px; }
+  .input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; color: var(--text); font-size: 15px;
+  }
+  .flex-between { display: flex; justify-content: space-between; align-items: center; }
+  /* Swipe delete */
+  .swipe-wrap { position: relative; overflow: hidden; margin: 0 -16px; }
+  .swipe-bg {
+    position: absolute; right: 0; top: 0; bottom: 0; width: 72px;
+    background: var(--red); display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .swipe-fg {
+    position: relative; z-index: 1; background: var(--card); padding: 0 16px;
+    transition: transform 0.25s ease;
+  }
+  .swipe-fg.open { transform: translateX(-72px); }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+  /* Splash screen */
+  .splash {
+    position: fixed; inset: 0; z-index: 200; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity .5s ease, visibility .5s ease;
+  }
+  .splash.hide { opacity: 0; visibility: hidden; pointer-events: none; }
+  .splash h2 {
+    font-size: 26px; font-weight: 800; text-align: center; padding: 0 32px;
+    color: var(--text); line-height: 1.5; letter-spacing: -.3px;
+  }
+  .splash h2 span { color: var(--accent); }
+  .splash .sub { font-size: 14px; color: var(--text2); margin-top: 8px; }
+  .splash .btn-enter {
+    margin-top: 40px; padding: 14px 36px; font-size: 16px;
+    background: linear-gradient(135deg, var(--accent), #9b8cf8);
+    color: #fff; border: none; border-radius: 12px; font-weight: 700;
+    cursor: pointer; transition: all .2s; letter-spacing: .5px;
+  }
+  .splash .btn-enter:active { transform: scale(.96); opacity: .85; }
+
+  /* Big grade display */
+  .big-grade {
+    font-size: 48px; font-weight: 900; text-align: center; padding: 16px 0;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div class="splash" id="splash">
+  <h2>Welcome to<br><span>Ascent</span></h2>
+  <div class="sub">私人攀岩进度管理</div>
+  <button class="btn-enter" onclick="dismissSplash()">进入</button>
+</div>
+
+<header>
+  <h1>🧗 Ascent</h1>
+  <span id="headerDate" style="font-size:14px;color:var(--text2)"></span>
+</header>
+<div id="reminderBanner" style="display:none;margin:0 16px 8px;padding:12px 16px;border-radius:10px;font-size:14px;font-weight:700;align-items:center;justify-content:space-between;gap:8px">
+  <span id="reminderBannerText"></span>
+  <span onclick="document.getElementById('reminderBanner').style.display='none'" style="cursor:pointer;font-size:18px;opacity:0.6;flex-shrink:0">&times;</span>
+</div>
+
+<!-- ====== 总览 ====== -->
+<div id="homeView" class="view active">
+  <div class="stat-row">
+    <div class="stat"><div class="num" id="statTotal">0</div><div class="label">总攀爬</div></div>
+    <div class="stat"><div class="num" id="statWeek">0</div><div class="label">本周攀爬</div></div>
+    <div class="stat"><div class="num" id="statSends">0</div><div class="label">完攀记录</div></div>
+    <div class="stat"><div class="num" id="statBest">-</div><div class="label">当前最高难度</div></div>
+  </div>
+
+  <div class="card" style="text-align:center;padding:12px 16px">
+    <span style="color:var(--text2);font-size:13px">⏱ 累计训练时长</span>
+    <span id="statDuration" style="font-size:20px;font-weight:800;margin-left:8px">0 分钟</span>
+  </div>
+
+  <div class="card">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calPrevMonth()">◀</button>
+      <span class="month-label" id="calMonthLabel"></span>
+      <button class="cal-nav" onclick="calNextMonth()">▶</button>
+    </div>
+    <div class="cal-grid" id="calDays"></div>
+  </div>
+
+  <div class="card">
+    <h3>📋 今日 Session</h3>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:8px">← 左滑记录可删除</div>
+    <div id="todayClimbs"><div class="empty-state"><div class="icon">🏔️</div>今天还没记录，快去爬吧！</div></div>
+    <button class="btn btn-accent btn-full mt-16" onclick="switchView('logView')">+ 记录攀爬</button>
+  </div>
+</div>
+
+<!-- ====== 记录 ====== -->
+<div id="logView" class="view">
+  <div class="card">
+    <!-- Row 1: Date + Duration -->
+    <div style="display:flex;gap:8px;padding:0;margin-bottom:4px">
+      <span style="flex:1;font-size:12px;color:var(--text2)">日期 <span style="color:var(--red);font-size:10px">必选</span></span>
+      <span style="flex:1;font-size:12px;color:var(--text2)">时长 <span style="color:var(--red);font-size:10px">必选</span></span>
+    </div>
+    <div class="meta-row" style="padding:0;margin-bottom:14px">
+      <input type="date" id="logDate" class="input">
+      <input type="number" id="logDuration" class="input" placeholder="时长(分钟)" min="0" step="5" inputmode="numeric">
+    </div>
+    <!-- Row 2: Zone -->
+    <div class="zone-toggle" style="padding:0;margin-bottom:14px">
+      <button class="zone-btn sel" data-zone="boulder" onclick="pickZone('boulder',this)">抱石<span class="sub">Bouldering</span></button>
+      <button class="zone-btn" data-zone="rope" onclick="pickZone('rope',this)">绳攀<span class="sub">Rope</span></button>
+    </div>
+    <!-- Divider -->
+    <div style="border-top:1px solid var(--border);margin-bottom:14px"></div>
+    <!-- Row 3: Grade (required) -->
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">难度 <span style="color:var(--red);font-size:10px">必选</span></div>
+    <div class="grade-grid" id="gradeGrid" style="padding:0;margin-bottom:14px"></div>
+    <!-- Row 4: Style (required) -->
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">线路风格 <span style="color:var(--red);font-size:10px">必选</span></div>
+    <div class="tag-row" id="styleTags" style="padding:0;margin-bottom:14px"></div>
+    <!-- Row 5: Result (required) -->
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">结果 <span style="color:var(--red);font-size:10px">必选</span></div>
+    <div class="tag-row" id="resultTags" style="padding:0;margin-bottom:14px"></div>
+    <!-- Save -->
+    <button class="btn btn-accent" style="width:100%;padding:14px;font-size:16px" id="saveBtn" disabled onclick="saveClimb()">记录攀爬</button>
+    <div id="logFeedback" class="text-center mt-8" style="color:var(--green);display:none"></div>
+  </div>
+</div>
+
+<!-- ====== 历史 ====== -->
+<div id="historyView" class="view">
+  <div class="history-tabs">
+    <button class="history-tab sel" data-tab="day" onclick="switchHistoryTab('day',this)">按日</button>
+    <button class="history-tab" data-tab="month" onclick="switchHistoryTab('month',this)">按月</button>
+    <button class="history-tab" data-tab="year" onclick="switchHistoryTab('year',this)">按年</button>
+  </div>
+  <div style="padding:0 16px;margin-bottom:8px;font-size:11px;color:var(--text2)" id="swipeHint">← 左滑记录可删除</div>
+  <div id="historyContent"></div>
+</div>
+
+<!-- ====== 目标 ====== -->
+<div id="goalsView" class="view">
+  <!-- 本月目标 -->
+  <div class="card">
+    <div class="flex-between">
+      <h3 style="margin:0">🎯 本月目标</h3>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:13px" onclick="showGoalModal()">设置</button>
+    </div>
+    <div id="goalContent"></div>
+  </div>
+
+  <!-- 训练日历 -->
+  <div class="card">
+    <h3 style="margin:0;margin-bottom:8px">📅 训练日历</h3>
+    <div id="trainingCalendarContent"></div>
+  </div>
+
+  <!-- 目标攻克难度 -->
+  <div class="card">
+    <div class="flex-between">
+      <h3 style="margin:0">💪 目标攻克难度</h3>
+      <button class="btn btn-outline" style="padding:6px 12px;font-size:13px" onclick="showTargetModal()">设置</button>
+    </div>
+    <div id="targetContent"></div>
+  </div>
+
+  <!-- 训练提醒 -->
+  <div class="card">
+    <h3 style="margin:0;margin-bottom:8px">🔔 训练提醒</h3>
+    <div id="reminderContent"></div>
+  </div>
+</div>
+
+<!-- ====== 底部导航 ====== -->
+<nav>
+  <button class="active" data-view="homeView" onclick="switchView('homeView')">
+    <span class="nav-icon">📊</span>总览
+  </button>
+  <button data-view="goalsView" onclick="switchView('goalsView')">
+    <span class="nav-icon">🎯</span>目标
+  </button>
+  <button data-view="logView" onclick="switchView('logView')">
+    <span class="nav-icon">➕</span>记录
+  </button>
+  <button data-view="historyView" onclick="switchView('historyView')">
+    <span class="nav-icon">📅</span>历史
+  </button>
+</nav>
+
+<!-- ====== 目标模态框 ====== -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <h2>设置本月目标</h2>
+    <div style="margin-bottom:12px">
+      <label class="text-sm">目标类型</label>
+      <select id="goalType" class="input" style="margin-top:4px">
+        <option value="count">本月攀爬次数</option>
+        <option value="grade">完成指定难度</option>
+      </select>
+    </div>
+    <div id="goalCountRow" style="margin-bottom:12px">
+      <label class="text-sm">目标次数</label>
+      <input id="goalCount" class="input" type="number" value="30" style="margin-top:4px">
+    </div>
+    <div id="goalGradeRow" style="margin-bottom:12px;display:none">
+      <label class="text-sm">目标难度</label>
+      <select id="goalGrade" class="input" style="margin-top:4px"></select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-accent" style="flex:1" onclick="saveGoal()">保存</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeGoalModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ====== 攻克难度模态框 ====== -->
+<div class="modal-overlay" id="targetModal">
+  <div class="modal">
+    <h2>设置目标攻克难度</h2>
+    <div style="margin-bottom:12px">
+      <label class="text-sm">想要攻克的难度</label>
+      <select id="targetGrade" class="input" style="margin-top:4px"></select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-accent" style="flex:1" onclick="saveTarget()">保存</button>
+      <button class="btn btn-outline" style="flex:1" onclick="closeTargetModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 数据层 ──
+const GRADES = ['V0','V1','V2','V3','V4','V5','V6','V7','V8','V9','V10'];
+
+const ZONE_STYLES = {
+  boulder: [
+    {key:'slab',label:'俯角板'},{key:'vert',label:'垂直面'},{key:'overhang',label:'仰角'},
+    {key:'steep',label:'大角度'},{key:'roof',label:'屋檐'},{key:'crimp',label:'指力点'},
+    {key:'sloper',label:'摩擦点'},{key:'pinch',label:'捏点'},{key:'dyno',label:'动态线'},
+    {key:'comp',label:'压缩线'},{key:'crack',label:'裂缝'},
+  ],
+  rope: [
+    {key:'slab',label:'俯角'},{key:'vert',label:'垂直'},{key:'overhang',label:'仰角'},
+    {key:'steep',label:'大仰角'},{key:'roof',label:'屋檐'},{key:'crack',label:'裂缝'},
+    {key:'tufa',label:'钟乳'},{key:'tech',label:'技术型'},{key:'endurance',label:'耐力型'},
+    {key:'balance',label:'平衡型'},
+  ],
+};
+
+const RESULTS = [
+  {key:'send',label:'✅ 完攀',cls:'send'},
+  {key:'project',label:'🔴 攻克中',cls:'project'},
+];
+
+function load(k) { return JSON.parse(localStorage.getItem('cc_'+k) || 'null'); }
+function save(k,v) { localStorage.setItem('cc_'+k, JSON.stringify(v)); }
+function getClimbs() { return load('climbs') || []; }
+function getGoal() { return load('goal') || null; }
+function getTarget() { return load('target') || null; }
+
+// ── 状态 ──
+let selZone = 'boulder', selGrade = null, selStyle = null, selResult = null;
+let calYear, calMonth, historyTab = 'day';
+
+// ── 开屏 ──
+function dismissSplash() {
+  var splash = document.getElementById('splash');
+  splash.classList.add('hide');
+}
+
+// ── 初始化 ──
+function init() {
+  // 开屏：每次访问都显示
+  document.getElementById('splash').classList.remove('hide');
+
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'});
+  const now = new Date();
+  calYear = now.getFullYear(); calMonth = now.getMonth();
+  document.getElementById('logDate').value = now.toISOString().split('T')[0];
+  renderGradeGrid(); renderStyleTags(); renderResultTags();
+  renderHome(); renderHistory(); renderGoals();
+  setTimeout(checkReminder, 2000);
+}
+
+function renderGradeGrid() {
+  document.getElementById('gradeGrid').innerHTML = GRADES.map(v =>
+    `<button class="grade-btn" data-grade="${v}" onclick="pickGrade('${v}',this)">${v}</button>`).join('');
+}
+function renderStyleTags() {
+  document.getElementById('styleTags').innerHTML = ZONE_STYLES[selZone].map(s =>
+    `<span class="tag" data-style="${s.key}" onclick="pickStyle('${s.key}',this)">${s.label}</span>`).join('');
+}
+function renderResultTags() {
+  document.getElementById('resultTags').innerHTML = RESULTS.map(r =>
+    `<span class="tag" data-result="${r.key}" onclick="pickResult('${r.key}',this)">${r.label}</span>`).join('');
+}
+
+// ── 选择逻辑 ──
+function pickZone(v,el) {
+  selZone=v; selStyle=null;
+  document.querySelectorAll('.zone-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); renderStyleTags(); checkReady();
+}
+function pickGrade(v,el) {
+  selGrade=v;
+  document.querySelectorAll('#gradeGrid .grade-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); checkReady();
+}
+function pickStyle(v,el) {
+  selStyle=v;
+  document.querySelectorAll('#styleTags .tag').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel'); checkReady();
+}
+function pickResult(v,el) {
+  selResult=v;
+  document.querySelectorAll('#resultTags .tag').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel'); checkReady();
+}
+function checkReady() { document.getElementById('saveBtn').disabled = !(selGrade && selStyle && selResult); }
+
+// ── 滑动删除 ──
+let swipeOpen = null; // currently open swipe item
+let swipeStartX = 0, swipeStartY = 0, swipeEl = null, swipeOffset = 0;
+
+function climbItemHTML(c) {
+  const zoneLabel = c.zone==='rope'?'绳攀':'抱石';
+  const styles = ZONE_STYLES[c.zone]||ZONE_STYLES.boulder;
+  const sl = styles.find(s=>s.key===c.style)?.label||c.style;
+  const ri = RESULTS.find(r=>r.key===c.result);
+  return `<div class="swipe-wrap" data-id="${c.id}">
+    <div class="swipe-bg" onclick="deleteClimb(${c.id})">删除</div>
+    <div class="swipe-fg">
+      <div class="climb-item">
+        <span class="grade-badge ${ri?.cls||''}">${c.grade}</span>
+        <span style="flex:1">${sl} · ${ri?.label||c.result}<span class="zone-badge">${zoneLabel}</span></span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function closeSwipe() {
+  if (swipeEl) { swipeEl.classList.remove('open'); swipeEl.style.transform = ''; }
+  swipeEl = null; swipeOpen = null; swipeOffset = 0;
+}
+
+document.addEventListener('touchstart', function(e) {
+  const fg = e.target.closest('.swipe-fg');
+  if (!fg) { closeSwipe(); return; }
+  // Close previous
+  if (swipeEl && swipeEl !== fg) closeSwipe();
+  swipeEl = fg;
+  swipeStartX = e.touches[0].clientX;
+  swipeStartY = e.touches[0].clientY;
+  swipeOffset = fg.classList.contains('open') ? -72 : 0;
+}, {passive:true});
+
+document.addEventListener('touchmove', function(e) {
+  if (!swipeEl) return;
+  const dx = e.touches[0].clientX - swipeStartX;
+  const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+  // Only horizontal swipes
+  if (Math.abs(dx) > 8 && dy < Math.abs(dx) * 0.8) {
+    const tx = Math.min(0, Math.max(-72, swipeOffset + dx));
+    swipeEl.style.transform = `translateX(${tx}px)`;
+  }
+}, {passive:true});
+
+document.addEventListener('touchend', function() {
+  if (!swipeEl) return;
+  const tx = parseFloat(swipeEl.style.transform.replace('translateX(','').replace('px)','')) || 0;
+  if (tx < -30) {
+    swipeEl.style.transform = 'translateX(-72px)';
+    swipeEl.classList.add('open');
+  } else {
+    swipeEl.style.transform = '';
+    swipeEl.classList.remove('open');
+    swipeEl = null;
+  }
+});
+function saveClimb() {
+  if (!selGrade || !selStyle || !selResult) return;
+  const dateVal = document.getElementById('logDate').value;
+  const durVal = parseInt(document.getElementById('logDuration').value) || 0;
+  const ts = dateVal ? new Date(dateVal+'T12:00:00').toISOString() : new Date().toISOString();
+  const climbs = getClimbs();
+  climbs.push({ id: Date.now(), date: ts, zone: selZone, grade: selGrade, style: selStyle, result: selResult, duration: durVal });
+  save('climbs', climbs);
+
+  selGrade = selStyle = selResult = null;
+  document.querySelectorAll('#gradeGrid .sel, #styleTags .sel, #resultTags .sel').forEach(e=>e.classList.remove('sel'));
+  document.getElementById('saveBtn').disabled = true;
+
+  // Reset zone back to boulder
+  selZone = 'boulder';
+  document.querySelectorAll('.zone-btn').forEach(function(b){b.classList.remove('sel');});
+  var boulderBtn = document.querySelector('.zone-btn[data-zone="boulder"]');
+  if (boulderBtn) boulderBtn.classList.add('sel');
+  renderStyleTags();
+
+  // Reset date to today, clear duration
+  document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('logDuration').value = '';
+
+  const fb = document.getElementById('logFeedback');
+  fb.style.display='block'; fb.textContent='已记录！';
+  setTimeout(function(){fb.style.display='none'},1500);
+  renderHome(); renderHistory(); renderGoals();
+  setTimeout(checkReminder, 500);
+}
+
+function deleteClimb(id) {
+  if (!confirm('确定删除这条记录？')) return;
+  save('climbs', getClimbs().filter(c=>c.id!==id));
+  renderHome(); renderHistory(); renderGoals();
+}
+
+// ── 日历 ──
+const DAY_HEAD = ['日','一','二','三','四','五','六'];
+function calPrevMonth() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calNextMonth() { calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+function renderCalendar() {
+  document.getElementById('calMonthLabel').textContent = `${calYear}年 ${calMonth+1}月`;
+  const climbDates = new Set(getClimbs().map(c=>c.date.split('T')[0]));
+  const todayStr = new Date().toISOString().split('T')[0];
+  const firstDay = new Date(calYear,calMonth,1).getDay();
+  const daysInMonth = new Date(calYear,calMonth+1,0).getDate();
+  let html = '';
+  DAY_HEAD.forEach(h=>{html+=`<div class="day-head">${h}</div>`});
+  for(let i=0;i<firstDay;i++){html+='<div class="day"></div>';}
+  for(let d=1;d<=daysInMonth;d++){
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    let cls='day'; if(ds===todayStr)cls+=' today'; if(climbDates.has(ds))cls+=' has-climb';
+    html+=`<div class="${cls}">${d}</div>`;
+  }
+  document.getElementById('calDays').innerHTML = html;
+}
+
+// ── 首页 ──
+function renderHome() {
+  const climbs = getClimbs();
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+
+  document.getElementById('statTotal').textContent = climbs.length;
+
+  const weekStart = new Date(now); weekStart.setDate(now.getDate()-now.getDay());
+  document.getElementById('statWeek').textContent = climbs.filter(c=>new Date(c.date)>=weekStart).length;
+
+  const sends = climbs.filter(c=>c.result!=='project');
+  document.getElementById('statSends').textContent = sends.length;
+  if(sends.length>0) {
+    document.getElementById('statBest').textContent = sends.reduce((a,b)=>GRADES.indexOf(a.grade)>GRADES.indexOf(b.grade)?a:b).grade;
+  } else { document.getElementById('statBest').textContent = '-'; }
+
+  // 累计训练时长
+  const totalMin = climbs.reduce((sum,c)=>sum+(c.duration||0),0);
+  const h = Math.floor(totalMin/60), m = totalMin%60;
+  document.getElementById('statDuration').textContent = h>0 ? `${h} 小时 ${m} 分钟` : `${m} 分钟`;
+
+  const todayClimbs = climbs.filter(c=>c.date.startsWith(today));
+  const tcDiv = document.getElementById('todayClimbs');
+  if(todayClimbs.length===0) {
+    tcDiv.innerHTML = '<div class="empty-state"><div class="icon">🏔️</div>今天还没记录，快去爬吧！</div>';
+  } else {
+    tcDiv.innerHTML = todayClimbs.reverse().map(c=>climbItemHTML(c)).join('');
+  }
+  renderCalendar();
+}
+
+// ── 历史 ──
+function switchHistoryTab(tab,el) {
+  historyTab = tab;
+  document.querySelectorAll('.history-tab').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('swipeHint').style.display = tab==='day' ? 'block' : 'none';
+  renderHistory();
+}
+
+function renderHistory() {
+  const climbs = getClimbs();
+  const div = document.getElementById('historyContent');
+  if(climbs.length===0) {
+    div.innerHTML = '<div class="empty-state"><div class="icon">📅</div>还没有攀爬记录</div>'; return;
+  }
+
+  if(historyTab==='day') renderHistoryByDay(div, climbs);
+  else if(historyTab==='month') renderHistoryByMonth(div, climbs);
+  else if(historyTab==='year') renderHistoryByYear(div, climbs);
+}
+
+function renderHistoryByDay(div, climbs) {
+  const grouped = {};
+  climbs.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(c=>{
+    const d = new Date(c.date).toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'short'});
+    if(!grouped[d]) grouped[d]=[]; grouped[d].push(c);
+  });
+  div.innerHTML = Object.entries(grouped).map(([date,climbs])=>`
+    <div class="card"><h3>${date} · ${climbs.length} 次</h3>
+      ${climbs.map(c=>climbItemHTML(c)).join('')}
+    </div>`).join('');
+}
+
+function renderHistoryByMonth(div, climbs) {
+  const grouped = {};
+  climbs.forEach(c=>{
+    const d = new Date(c.date);
+    const key = `${d.getFullYear()}年${d.getMonth()+1}月`;
+    if(!grouped[key]) grouped[key]=[];
+    grouped[key].push(c);
+  });
+  const keys = Object.keys(grouped).sort((a,b)=>b.localeCompare(a));
+  div.innerHTML = keys.map(key=>statCard(key, grouped[key], 'bar')).join('');
+}
+
+function renderHistoryByYear(div, climbs) {
+  const grouped = {};
+  climbs.forEach(c=>{
+    const y = new Date(c.date).getFullYear();
+    if(!grouped[y]) grouped[y]=[];
+    grouped[y].push(c);
+  });
+  const years = Object.keys(grouped).sort((a,b)=>b-a);
+  div.innerHTML = years.map(y=>statCard(`${y}年`, grouped[y], 'pie')).join('');
+}
+
+// ── 难度进度条 + 统计卡片 ──
+const GRADE_COLORS = ['#5ee4d0','#48cec4','#4eaee0','#5b8df0','#7c8cf8','#8d7ef0','#9e70e8','#af62e0','#bd5ad8','#c960d0','#c07ef0'];
+
+function statCard(title, climbs, chartType) {
+  const total = climbs.length;
+  const sends = climbs.filter(c=>c.result!=='project');
+  const best = sends.length>0 ? sends.reduce((a,b)=>GRADES.indexOf(a.grade)>GRADES.indexOf(b.grade)?a:b).grade : '-';
+
+  // ── 难度分布 ──
+  const gMap = {};
+  climbs.forEach(c=>{ gMap[c.grade]=(gMap[c.grade]||0)+1; });
+  const gList = GRADES.filter(g=>gMap[g]).map((g,i)=>{
+    const idx = GRADES.indexOf(g);
+    return {label:g, count:gMap[g], color:GRADE_COLORS[Math.min(idx,GRADE_COLORS.length-1)]};
+  });
+  const gMax = Math.max(...gList.map(g=>g.count), 1);
+
+  let gSection = '';
+  if (chartType==='pie') {
+    // SVG 饼图
+    let cumAngle = 0, paths = '';
+    gList.forEach(d => {
+      if(d.count===0) return;
+      const angle = d.count/total * 360;
+      const sr = (cumAngle - 90) * Math.PI / 180;
+      const er = (cumAngle + angle - 90) * Math.PI / 180;
+      const x1 = 60 + 50 * Math.cos(sr), y1 = 60 + 50 * Math.sin(sr);
+      const x2 = 60 + 50 * Math.cos(er), y2 = 60 + 50 * Math.sin(er);
+      const la = (angle > 180) ? 1 : 0;
+      paths += `<path d="M60 60 L${x1} ${y1} A50 50 0 ${la} 1 ${x2} ${y2} Z" fill="${d.color}" stroke="var(--bg)" stroke-width="1"/>`;
+      cumAngle += angle;
+    });
+    gSection = `<div style="text-align:center">${paths?`<svg viewBox="0 0 120 120" width="140" height="140">${paths}</svg>`:''}</div>`;
+    // 图例
+    gSection += '<div style="display:flex;flex-wrap:wrap;gap:2px 12px;justify-content:center;margin-top:4px">';
+    gList.forEach(d => {
+      gSection += `<span style="font-size:11px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${d.color};vertical-align:middle;margin-right:3px"></span>${d.label} <b style="color:var(--accent)">${d.count}</b></span>`;
+    });
+    gSection += '</div>';
+  } else {
+    // 水平进度条
+    gSection = '';
+    gList.forEach(g=>{
+      const pct = Math.round(g.count/gMax*100);
+      gSection += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:12px;font-weight:700;min-width:28px;color:${g.color}">${g.label}</span>
+        <div style="flex:1;height:14px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${g.color};border-radius:4px;transition:width .3s"></div>
+        </div>
+        <span style="font-size:12px;min-width:24px;text-align:right;color:var(--accent);font-weight:700">${g.count}次</span>
+      </div>`;
+    });
+  }
+
+  // ── 风格统计 ──
+  const sMap = {};
+  climbs.forEach(c=>{
+    const styles = ZONE_STYLES[c.zone]||ZONE_STYLES.boulder;
+    const sl = styles.find(s=>s.key===c.style)?.label||c.style;
+    sMap[sl]=(sMap[sl]||0)+1;
+  });
+  const sList = Object.entries(sMap).sort((a,b)=>b[1]-a[1]);
+  let shtml = '';
+  sList.forEach(([k,v])=>{
+    shtml += `<span style="background:var(--border);padding:2px 8px;border-radius:10px;font-size:11px;margin:0 3px 4px 0;display:inline-block">${k} <b style="color:var(--accent)">${v}</b></span>`;
+  });
+
+  // ── 结果统计 ──
+  const rMap = {};
+  climbs.forEach(c=>{ rMap[c.result]=(rMap[c.result]||0)+1; });
+  const rColors = {send:'#5b9bd5',project:'#7c6ff7'};
+  const rLabels = {send:'完攀',project:'攻克中'};
+
+  return `<div class="card">
+    <h3>${title}</h3>
+    <div style="text-align:center;margin:4px 0">
+      <span style="font-size:36px;font-weight:900;color:var(--accent)">${total}</span>
+      <span style="font-size:16px;color:var(--text2)"> 次</span>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;font-size:13px;margin-bottom:8px">
+      <span>完攀 <b style="color:var(--green)">${sends.length}</b></span>
+      <span>最高 <b>${best}</b></span>
+      <span>成功率 <b>${total>0?Math.round(sends.length/total*100):0}%</b></span>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:4px">难度分布</div>
+    ${gSection}
+    <div style="margin-top:10px;font-size:11px;color:var(--text2);margin-bottom:4px">线路风格</div>
+    <div style="line-height:1.8">${shtml||'<span style="color:var(--text2);font-size:12px">-</span>'}</div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text2);margin-bottom:2px">攀爬结果</div>
+    <div style="font-size:13px">
+      ${RESULTS.filter(r=>rMap[r.key]).map(r=>`<span style="color:${rColors[r.key]};font-weight:700">${rLabels[r.key]} ${rMap[r.key]||0}</span>`).join(' <span style="color:var(--border)">|</span> ') || '<span style="color:var(--text2);font-size:12px">-</span>'}
+    </div>
+  </div>`;
+}
+
+// ── 目标 Tab ──
+function renderGoals() {
+  renderGoal();
+  renderTrainingCalendar();
+  renderTarget();
+  renderReminder();
+}
+
+// ── 训练提醒 ──
+function hasNotify() {
+  try { return window.Notification && typeof Notification.requestPermission === 'function'; } catch(e) { return false; }
+}
+function getTrainDates() { return load('trainDates') || []; }
+function addTrainDate(dateStr) {
+  var dates = getTrainDates();
+  if (dates.indexOf(dateStr) === -1) { dates.push(dateStr); dates.sort(); }
+  save('trainDates', dates);
+}
+function removeTrainDate(dateStr) {
+  var dates = getTrainDates().filter(function(d) { return d !== dateStr; });
+  save('trainDates', dates);
+}
+function toggleTrainDate(dateStr) {
+  var dates = getTrainDates();
+  if (dates.indexOf(dateStr) !== -1) {
+    removeTrainDate(dateStr);
+  } else {
+    addTrainDate(dateStr);
+  }
+  renderGoals();
+}
+function renderReminder() {
+  var div = document.getElementById('reminderContent');
+  if (!div) return;
+  var remind = load('remind');
+
+  var offBg = !remind ? 'var(--accent)' : 'transparent';
+  var offCl = !remind ? '#fff' : 'var(--text2)';
+  var onBg = remind ? 'var(--accent)' : 'transparent';
+  var onCl = remind ? '#fff' : 'var(--text2)';
+  var statusText = remind ? '✅ 已开启（开启后请刷新页面，页面顶端会显示提醒横幅）' : '未开启';
+  var statusColor = 'var(--text2)';
+
+  var html = '';
+  html += '<div style="display:flex;align-items:center;gap:12px">';
+  html += '<span style="display:flex;background:var(--border);border-radius:6px;overflow:hidden">';
+  html += '<button style="border:none;padding:8px 18px;font-size:13px;cursor:pointer;background:'+offBg+';color:'+offCl+'" onclick="toggleReminder(false)">关闭</button>';
+  html += '<button style="border:none;padding:8px 18px;font-size:13px;cursor:pointer;background:'+onBg+';color:'+onCl+'" onclick="toggleReminder(true)">开启</button>';
+  html += '</span>';
+  html += '<span style="font-size:12px;color:'+statusColor+'">'+statusText+'</span>';
+  html += '</div>';
+
+  div.innerHTML = html;
+}
+
+// 本月目标
+function renderGoal() {
+  const goal = getGoal();
+  const div = document.getElementById('goalContent');
+  if (!goal) {
+    div.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text2)">尚未设置目标</div>'; return;
+  }
+  const climbs = getClimbs();
+
+  if (goal.type === 'count') {
+    renderCountGoal(div, goal, climbs);
+  } else if (goal.type === 'grade') {
+    renderGradeGoal(div, goal, climbs);
+  }
+}
+
+function renderCountGoal(div, goal, climbs) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthClimbs = climbs.filter(c => new Date(c.date) >= monthStart);
+  const done = monthClimbs.length;
+  const pct = Math.min(100, Math.round(done / goal.target * 100));
+
+  // Days remaining
+  const lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  const today = now.getDate();
+  const daysRemain = lastDay - today;
+  const needPerDay = daysRemain > 0 ? Math.ceil((goal.target - done) / daysRemain) : 0;
+
+  // Big progress number
+  let html = `<div class="big-progress">
+    <span class="done">${done}</span><span class="sep">/</span><span class="target">${goal.target}</span><span class="unit">次</span>
+  </div>`;
+
+  // Progress bar
+  html += `<div class="goal-bar"><div class="fill" style="width:${pct}%"></div></div>`;
+
+  // Status text
+  if (done >= goal.target) {
+    html += '<div class="text-sm text-center mt-8" style="color:var(--green)">🎉 已达成目标！</div>';
+  } else {
+    html += '<div class="text-sm text-center mt-8">' +
+      '还差 <b style="color:var(--accent)">' + (goal.target - done) + '</b> 次，' +
+      '本月剩 <b>' + daysRemain + '</b> 天' +
+      (needPerDay > 0 ? '，日均需训练 <b style="color:var(--text2)">' + needPerDay + '</b> 次' : '') +
+    '</div>';
+  }
+
+  div.innerHTML = html;
+}
+
+// 训练日历（训练建议 + 自选日期日历）
+function renderTrainingCalendar() {
+  var div = document.getElementById('trainingCalendarContent');
+  if (!div) return;
+  var now = new Date();
+  var goal = getGoal();
+  var climbs = getClimbs();
+  var html = '';
+
+  // ── 智能训练建议（仅次数目标且未达成时显示）──
+  if (goal && goal.type === 'count') {
+    var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    var monthClimbs = climbs.filter(function(c) { return new Date(c.date) >= monthStart; });
+    var done = monthClimbs.length;
+    var lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+    var todayInt = now.getDate();
+    var daysRemain = lastDay - todayInt;
+    var remaining = goal.target - done;
+
+    if (remaining > 0 && daysRemain > 0) {
+      // Build climbByDay
+      var climbByDay = {};
+      monthClimbs.forEach(function(c) {
+        var d = new Date(c.date).getDate();
+        climbByDay[d] = (climbByDay[d]||0) + 1;
+      });
+
+      var weeksRemain = Math.max(0.5, daysRemain / 7);
+      var perWeek = remaining / weeksRemain;
+
+      // 分析用户历史训练日偏好
+      var wdCounts = [0,0,0,0,0,0,0];
+      monthClimbs.forEach(function(c) {
+        var d = new Date(c.date);
+        var wd = d.getDay();
+        if (climbByDay[d.getDate()]) wdCounts[wd]++;
+      });
+
+      var ranked = [0,1,2,3,4,5,6].sort(function(a,b){ return wdCounts[b]-wdCounts[a]; });
+
+      var targetDaysPerWeek, intensityHint;
+      if (perWeek <= 1) { targetDaysPerWeek = 1; intensityHint = '保持每周 1 次即可达标'; }
+      else if (perWeek <= 2) { targetDaysPerWeek = 2; intensityHint = '每周 2 次，轻松完成'; }
+      else if (perWeek <= 3) { targetDaysPerWeek = 3; intensityHint = '每周 3 次，节奏刚好'; }
+      else if (perWeek <= 4) { targetDaysPerWeek = 4; intensityHint = '每周 4 次，需要坚持'; }
+      else if (perWeek <= 5) { targetDaysPerWeek = 5; intensityHint = '⚠ 每周需 5 次，强度偏高'; }
+      else { targetDaysPerWeek = 6; intensityHint = '⚠ 目标可能过高，建议调整'; }
+
+      // 选训练日（保证间隔）
+      var allWeekdays = [0,1,2,3,4,5,6];
+      var pickOrder = ranked.slice();
+      allWeekdays.forEach(function(w) { if (pickOrder.indexOf(w) === -1) pickOrder.push(w); });
+
+      var chosen = [];
+      for (var wi = 0; wi < pickOrder.length; wi++) {
+        if (chosen.length >= targetDaysPerWeek) break;
+        var w = pickOrder[wi];
+        var tooClose = chosen.some(function(c) {
+          var dist = Math.min(Math.abs(w - c), 7 - Math.abs(w - c));
+          return dist < 2;
+        });
+        if (!tooClose) chosen.push(w);
+      }
+      if (chosen.length < targetDaysPerWeek) {
+        for (var wi2 = 0; wi2 < pickOrder.length; wi2++) {
+          if (chosen.length >= targetDaysPerWeek) break;
+          var w2 = pickOrder[wi2];
+          if (chosen.indexOf(w2) === -1) chosen.push(w2);
+        }
+      }
+      chosen.sort(function(a,b){ return a-b; });
+
+      var wdLabels = ['日','一','二','三','四','五','六'];
+      var weekPlan = chosen.map(function(w) { return '周' + wdLabels[w]; }).join('、');
+
+      html += '<div style="padding:10px 12px;background:var(--bg);border-radius:8px;margin-bottom:12px">';
+      html += '<div style="font-size:12px;color:var(--text2);margin-bottom:4px">💡 智能训练建议</div>';
+      html += '<div style="font-size:14px;font-weight:700;margin-bottom:2px">'+weekPlan+'</div>';
+      html += '<div style="font-size:12px;color:var(--text2)">'+intensityHint+'</div>';
+      html += '</div>';
+    }
+  }
+
+  // ── 自选训练日期日历 ──
+  var trainDates = getTrainDates();
+  var firstDayOfWeekT = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+  var htmlLastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  var todayStr = now.getDate();
+  var highlighted = 0;
+
+  html += '<div style="font-size:11px;color:var(--text2);margin-bottom:6px">点击日期添加/取消训练日</div>';
+  var calHtml = '<div class="cal-grid">';
+  ['日','一','二','三','四','五','六'].forEach(function(h) { calHtml += '<div class="day-head">'+h+'</div>'; });
+  for (var i = 0; i < firstDayOfWeekT; i++) { calHtml += '<div></div>'; }
+  for (var d = 1; d <= htmlLastDay; d++) {
+    var ds = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var isTrain = trainDates.indexOf(ds) !== -1;
+    if (isTrain) highlighted++;
+    var isPast = d < todayStr;
+    var style = '';
+    if (isTrain) {
+      style = 'background:var(--accent);color:#fff;cursor:pointer';
+    } else if (isPast) {
+      style = 'color:#555;cursor:pointer';
+    } else {
+      style = 'cursor:pointer;color:var(--text)';
+    }
+    calHtml += '<div class="day" style="'+style+'" onclick="toggleTrainDate(\''+ds+'\')">'+d+'</div>';
+  }
+  calHtml += '</div>';
+  html += calHtml;
+
+  if (highlighted > 0) {
+    html += '<div style="font-size:11px;color:var(--text2);margin-top:4px">本月已设置 <b style="color:var(--accent)">'+highlighted+'</b> 个训练日</div>';
+  }
+
+  div.innerHTML = html;
+}
+
+function renderGradeGoal(div, goal, climbs) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  // Sends at target grade or above this month (sends only)
+  const monthSends = climbs.filter(c =>
+    new Date(c.date) >= monthStart && c.result !== 'project' && GRADES.indexOf(c.grade) >= GRADES.indexOf(goal.target)
+  );
+
+  // All attempts at target grade+ this month
+  const monthAttempts = climbs.filter(c =>
+    new Date(c.date) >= monthStart && GRADES.indexOf(c.grade) >= GRADES.indexOf(goal.target)
+  );
+
+  const done = monthSends.length > 0;
+
+  let html = `<div class="big-progress">
+    <span class="done" style="color:${done?'var(--green)':'var(--accent)'}">${goal.target}</span>
+    <span class="unit" style="font-size:16px">及以上</span>
+  </div>`;
+
+  // Attempt stats
+  html += `<div style="display:flex;gap:16px;justify-content:center;font-size:14px;margin-bottom:8px">`;
+  html += `<span>尝试 <b>${monthAttempts.length}</b> 条</span>`;
+  html += `<span>完攀 <b style="color:var(--green)">${monthSends.length}</b> 条</span>`;
+  html += `<span>成功率 <b>${monthAttempts.length>0?Math.round(monthSends.length/monthAttempts.length*100):0}%</b></span>`;
+  html += `</div>`;
+
+  // Status
+  if (done) {
+    html += '<div class="text-sm text-center mt-8" style="color:var(--green)">✅ 已达成！本月完成了 ' + monthSends.length + ' 条 ' + goal.target + ' 及以上难度的线路</div>';
+  } else if (monthAttempts.length > 0) {
+    html += '<div class="text-sm text-center mt-8" style="color:var(--text2)">尚未达成，但已在尝试中。坚持！</div>';
+  } else {
+    html += '<div class="text-sm text-center mt-8" style="color:var(--text2)">本月还没有 ' + goal.target + ' 及以上的记录，加油！</div>';
+  }
+
+  // List recent attempts at this grade
+  const recentAttempts = monthAttempts.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0, 10);
+  if (recentAttempts.length > 0) {
+    html += '<div class="text-sm mt-16 mb-8" style="color:var(--text2)">本月记录</div>';
+    recentAttempts.forEach(c => {
+      const styles = ZONE_STYLES[c.zone]||ZONE_STYLES.boulder;
+      const sl = styles.find(s=>s.key===c.style)?.label||c.style;
+      const ri = RESULTS.find(r=>r.key===c.result);
+      const zl = c.zone==='rope'?'绳攀':'抱石';
+      const d = new Date(c.date).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+      html += `<div class="climb-item">
+        <span class="grade-badge ${ri?.cls||''}">${c.grade}</span>
+        <span style="flex:1;font-size:14px">${sl} · ${ri?.label||c.result}<span class="zone-badge">${zl}</span></span>
+        <span style="font-size:12px;color:var(--text2)">${d}</span>
+      </div>`;
+    });
+  }
+
+  div.innerHTML = html;
+}
+
+// 目标攻克难度
+function renderTarget() {
+  const target = getTarget();
+  const div = document.getElementById('targetContent');
+  if (!target) {
+    div.innerHTML = '<div style="text-align:center;padding:16px;color:var(--text2)">尚未设置目标攻克难度</div>';
+    return;
+  }
+  const climbs = getClimbs();
+  const targetClimbs = climbs.filter(c => c.grade === target.grade);
+  const sends = targetClimbs.filter(c => c.result !== 'project');
+
+  div.innerHTML = `
+    <div class="big-grade">${target.grade}</div>
+    <div style="display:flex;gap:16px;justify-content:center;font-size:14px">
+      <div style="text-align:center"><b style="font-size:22px">${targetClimbs.length}</b><br><span class="text-sm">总尝试</span></div>
+      <div style="text-align:center"><b style="font-size:22px;color:var(--green)">${sends.length}</b><br><span class="text-sm">完攀</span></div>
+      <div style="text-align:center"><b style="font-size:22px;color:var(--red)">${targetClimbs.length-sends.length}</b><br><span class="text-sm">未完成</span></div>
+    </div>
+    <div class="goal-bar mt-16"><div class="fill" style="width:${targetClimbs.length>0?Math.round(sends.length/targetClimbs.length*100):0}%;background:var(--green)"></div></div>
+    <div class="text-sm text-center mt-8">
+      ${sends.length>0 ? `完成率 ${Math.round(sends.length/targetClimbs.length*100)}%，继续加油！` : targetClimbs.length>0 ? '还没有完成过，继续努力！' : '还没尝试过这个难度，去试试吧！'}
+    </div>
+  `;
+}
+
+// ── 目标模态框 ──
+function showGoalModal() {
+  document.getElementById('goalModal').classList.add('show');
+  const goal = getGoal();
+  if (goal) {
+    document.getElementById('goalType').value = goal.type;
+    if(goal.type==='count') document.getElementById('goalCount').value = goal.target;
+    if(goal.type==='grade' && goal.target) document.getElementById('goalGrade').value = goal.target;
+  }
+  document.getElementById('goalGrade').innerHTML = GRADES.map(g=>`<option value="${g}">${g}</option>`).join('');
+  document.getElementById('goalType').dispatchEvent(new Event('change'));
+}
+function closeGoalModal() { document.getElementById('goalModal').classList.remove('show'); }
+document.getElementById('goalType').addEventListener('change', function() {
+  document.getElementById('goalCountRow').style.display = this.value==='count'?'block':'none';
+  document.getElementById('goalGradeRow').style.display = this.value==='count'?'none':'block';
+});
+function saveGoal() {
+  const type = document.getElementById('goalType').value;
+  const target = type==='count' ? parseInt(document.getElementById('goalCount').value) : document.getElementById('goalGrade').value;
+  save('goal',{type,target});
+  closeGoalModal();
+  renderGoals();
+}
+
+// ── 提醒 ──
+function toggleReminder(on) {
+  save('remind', on);
+  if (on) {
+    // 顺便尝试请求浏览器原生通知权限（非必须，锦上添花）
+    if (hasNotify() && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+  renderGoals();
+}
+
+function checkReminder() {
+  var remind = load('remind');
+  if (!remind) return;
+
+  var now = new Date();
+  var todayStr = now.toISOString().split('T')[0];
+  var banner = document.getElementById('reminderBanner');
+  var textEl = document.getElementById('reminderBannerText');
+  if (!banner || !textEl) return;
+
+  var isUrgent = false;
+  var msg = '';
+
+  // 先检查自选训练日期
+  var trainDates = getTrainDates();
+  if (trainDates.indexOf(todayStr) !== -1) {
+    var wd = ['日','一','二','三','四','五','六'][now.getDay()];
+    msg = '🏋️ 今天是 ' + (now.getMonth()+1) + '月' + now.getDate() + '日 周' + wd + '，训练日！该去攀岩了';
+    isUrgent = true;
+  } else {
+    // 再检查目标进度
+    var goal = getGoal();
+    if (goal && goal.type === 'count') {
+      var climbs = getClimbs();
+      var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      var done = climbs.filter(function(c) { return new Date(c.date) >= monthStart; }).length;
+      var remaining = goal.target - done;
+      if (remaining > 0) {
+        var lastDay = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+        var daysRemain = lastDay - now.getDate();
+        if (daysRemain > 0) {
+          msg = '📊 本月还差 ' + remaining + ' 次训练，剩 ' + daysRemain + ' 天，日均需 ' + Math.ceil(remaining/daysRemain) + ' 次';
+          isUrgent = true;
+        }
+      }
+    }
+  }
+
+  if (isUrgent) {
+    banner.style.display = 'flex';
+    banner.style.background = 'var(--accent)';
+    banner.style.color = '#fff';
+    textEl.textContent = msg;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+// ── 攻克难度模态框 ──
+function showTargetModal() {
+  document.getElementById('targetModal').classList.add('show');
+  document.getElementById('targetGrade').innerHTML = GRADES.map(g=>`<option value="${g}">${g}</option>`).join('');
+  const t = getTarget();
+  if(t) document.getElementById('targetGrade').value = t.grade;
+}
+function closeTargetModal() { document.getElementById('targetModal').classList.remove('show'); }
+function saveTarget() {
+  save('target', { grade: document.getElementById('targetGrade').value });
+  closeTargetModal();
+  renderGoals();
+}
+
+// ── 导航 ──
+function switchView(viewId) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  document.getElementById(viewId).classList.add('active');
+  document.querySelector(`nav button[data-view="${viewId}"]`).classList.add('active');
+  if(viewId==='homeView') renderHome();
+  if(viewId==='historyView') renderHistory();
+  if(viewId==='goalsView') renderGoals();
+}
+
+// 模态框关闭
+document.getElementById('goalModal').addEventListener('click',function(e){if(e.target===this)closeGoalModal();});
+document.getElementById('targetModal').addEventListener('click',function(e){if(e.target===this)closeTargetModal();});
+
+init();
+</script>
+</body>
+</html>
