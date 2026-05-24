@@ -33,20 +33,20 @@
   .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
 
   /* Grade grid */
-  .grade-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 16px; }
-  .grade-btn {
-    background: var(--card); border: 1.5px solid transparent; border-radius: var(--radius);
-    padding: 14px 8px; color: var(--text); font-size: 16px; font-weight: 700;
+  .grade-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 0 16px; }
+  .grade-grid .grade-btn {
+    background: var(--card); border: 1.5px solid transparent; border-radius: 20px;
+    padding: 10px 4px; color: var(--text); font-size: 14px; font-weight: 600;
     cursor: pointer; text-align: center; transition: all .15s;
   }
-  .grade-btn:active { transform: scale(.95); }
-  .grade-btn.sel { border-color: var(--accent); background: rgba(124,140,248,.12); }
+  .grade-grid .grade-btn:active { transform: scale(.95); }
+  .grade-grid .grade-btn.sel { border-color: var(--accent); background: rgba(124,140,248,.12); }
 
   /* Tag chips */
-  .tag-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 16px; }
   .tag {
-    background: var(--card); border: 1.5px solid transparent; border-radius: 20px;
-    padding: 10px 16px; color: var(--text); font-size: 14px; font-weight: 600;
+    background: var(--card); border: 1.5px solid transparent; border-radius: 16px;
+    padding: 6px 12px; color: var(--text); font-size: 12px; font-weight: 600;
     cursor: pointer; transition: all .15s;
   }
   .tag:active { transform: scale(.95); }
@@ -275,29 +275,31 @@
   <div class="card">
     <!-- Row 1: Date + Duration -->
     <div style="display:flex;gap:8px;padding:0;margin-bottom:4px">
-      <span style="flex:1;font-size:12px;color:var(--text2)">日期 <span style="color:var(--red);font-size:10px">必选</span></span>
-      <span style="flex:1;font-size:12px;color:var(--text2)">时长 <span style="color:var(--red);font-size:10px">必选</span></span>
+      <span style="flex:1;font-size:12px;color:var(--text2)">日期</span>
+      <span style="flex:1;font-size:12px;color:var(--text2)">训练时长</span>
     </div>
-    <div class="meta-row" style="padding:0;margin-bottom:14px">
-      <input type="date" id="logDate" class="input">
+    <div class="meta-row" style="padding:0;margin-bottom:12px">
+      <input type="date" id="logDate" class="input" placeholder="日期">
       <input type="number" id="logDuration" class="input" placeholder="时长(分钟)" min="0" step="5" inputmode="numeric">
     </div>
     <!-- Row 2: Zone -->
-    <div class="zone-toggle" style="padding:0;margin-bottom:14px">
+    <div class="zone-toggle" style="padding:0;margin-bottom:12px">
       <button class="zone-btn sel" data-zone="boulder" onclick="pickZone('boulder',this)">抱石<span class="sub">Bouldering</span></button>
       <button class="zone-btn" data-zone="rope" onclick="pickZone('rope',this)">绳攀<span class="sub">Rope</span></button>
     </div>
-    <!-- Divider -->
-    <div style="border-top:1px solid var(--border);margin-bottom:14px"></div>
-    <!-- Row 3: Grade (required) -->
-    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">难度 <span style="color:var(--red);font-size:10px">必选</span></div>
-    <div class="grade-grid" id="gradeGrid" style="padding:0;margin-bottom:14px"></div>
-    <!-- Row 4: Style (required) -->
-    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">线路风格 <span style="color:var(--red);font-size:10px">必选</span></div>
-    <div class="tag-row" id="styleTags" style="padding:0;margin-bottom:14px"></div>
-    <!-- Row 5: Result (required) -->
-    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">结果 <span style="color:var(--red);font-size:10px">必选</span></div>
-    <div class="tag-row" id="resultTags" style="padding:0;margin-bottom:14px"></div>
+    <!-- Row 3: Grade + Style selects -->
+    <select id="gradeSelect" class="input" style="margin-bottom:10px;color-scheme:dark" onchange="pickGradeSelect(this.value)">
+      <option value="">选择难度</option>
+    </select>
+    <select id="styleSelect" class="input" style="margin-bottom:12px;color-scheme:dark" onchange="pickStyleSelect(this.value)">
+      <option value="">选择线路风格</option>
+    </select>
+    <!-- Row 4: Result buttons -->
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">结果</div>
+    <div style="display:flex;gap:8px;padding:0;margin-bottom:12px">
+      <button class="zone-btn" data-result="send" onclick="pickResultBtn('send',this)" style="flex:1">✅ 完攀</button>
+      <button class="zone-btn" data-result="project" onclick="pickResultBtn('project',this)" style="flex:1">🔴 攻克中</button>
+    </div>
     <!-- Save -->
     <button class="btn btn-accent" style="width:100%;padding:14px;font-size:16px" id="saveBtn" disabled onclick="saveClimb()">记录攀爬</button>
     <div id="logFeedback" class="text-center mt-8" style="color:var(--green);display:none"></div>
@@ -345,6 +347,15 @@
   <div class="card">
     <h3 style="margin:0;margin-bottom:8px">🔔 训练提醒</h3>
     <div id="reminderContent"></div>
+  </div>
+</div>
+
+<!-- ====== 详情模态框 ====== -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <h2 id="detailModalTitle"></h2>
+    <div id="detailModalContent"></div>
+    <button class="btn btn-outline" style="width:100%;margin-top:12px" onclick="closeDetailModal()">关闭</button>
   </div>
 </div>
 
@@ -438,6 +449,8 @@ function getTarget() { return load('target') || null; }
 // ── 状态 ──
 let selZone = 'boulder', selGrade = null, selStyle = null, selResult = null;
 let calYear, calMonth, historyTab = 'day';
+var _projectClimbsCache = null;
+var _sendClimbsCache = null;
 
 // ── 开屏 ──
 function dismissSplash() {
@@ -454,44 +467,40 @@ function init() {
   const now = new Date();
   calYear = now.getFullYear(); calMonth = now.getMonth();
   document.getElementById('logDate').value = now.toISOString().split('T')[0];
-  renderGradeGrid(); renderStyleTags(); renderResultTags();
+  renderGradeSelect(); renderStyleSelect();
   renderHome(); renderHistory(); renderGoals();
   setTimeout(checkReminder, 2000);
 }
 
-function renderGradeGrid() {
-  document.getElementById('gradeGrid').innerHTML = GRADES.map(v =>
-    `<button class="grade-btn" data-grade="${v}" onclick="pickGrade('${v}',this)">${v}</button>`).join('');
+function renderGradeSelect() {
+  var sel = document.getElementById('gradeSelect');
+  sel.innerHTML = '<option value="">选择难度</option>' + GRADES.map(function(v) {
+    return '<option value="'+v+'">'+v+'</option>';
+  }).join('');
 }
-function renderStyleTags() {
-  document.getElementById('styleTags').innerHTML = ZONE_STYLES[selZone].map(s =>
-    `<span class="tag" data-style="${s.key}" onclick="pickStyle('${s.key}',this)">${s.label}</span>`).join('');
-}
-function renderResultTags() {
-  document.getElementById('resultTags').innerHTML = RESULTS.map(r =>
-    `<span class="tag" data-result="${r.key}" onclick="pickResult('${r.key}',this)">${r.label}</span>`).join('');
+function renderStyleSelect() {
+  var sel = document.getElementById('styleSelect');
+  sel.innerHTML = '<option value="">选择线路风格</option>' + ZONE_STYLES[selZone].map(function(s) {
+    return '<option value="'+s.key+'">'+s.label+'</option>';
+  }).join('');
 }
 
 // ── 选择逻辑 ──
 function pickZone(v,el) {
   selZone=v; selStyle=null;
-  document.querySelectorAll('.zone-btn').forEach(b=>b.classList.remove('sel'));
-  el.classList.add('sel'); renderStyleTags(); checkReady();
+  document.querySelectorAll('.zone-btn').forEach(function(b){b.classList.remove('sel');});
+  el.classList.add('sel');
+  document.getElementById('styleSelect').value = '';
+  renderStyleSelect();
+  checkReady();
 }
-function pickGrade(v,el) {
-  selGrade=v;
-  document.querySelectorAll('#gradeGrid .grade-btn').forEach(b=>b.classList.remove('sel'));
-  el.classList.add('sel'); checkReady();
-}
-function pickStyle(v,el) {
-  selStyle=v;
-  document.querySelectorAll('#styleTags .tag').forEach(t=>t.classList.remove('sel'));
-  el.classList.add('sel'); checkReady();
-}
-function pickResult(v,el) {
-  selResult=v;
-  document.querySelectorAll('#resultTags .tag').forEach(t=>t.classList.remove('sel'));
-  el.classList.add('sel'); checkReady();
+function pickGradeSelect(v) { selGrade = v || null; checkReady(); }
+function pickStyleSelect(v) { selStyle = v || null; checkReady(); }
+function pickResultBtn(v,el) {
+  selResult = v;
+  document.querySelectorAll('[data-result]').forEach(function(b){b.classList.remove('sel');});
+  el.classList.add('sel');
+  checkReady();
 }
 function checkReady() { document.getElementById('saveBtn').disabled = !(selGrade && selStyle && selResult); }
 
@@ -561,10 +570,25 @@ function saveClimb() {
   const ts = dateVal ? new Date(dateVal+'T12:00:00').toISOString() : new Date().toISOString();
   const climbs = getClimbs();
   climbs.push({ id: Date.now(), date: ts, zone: selZone, grade: selGrade, style: selStyle, result: selResult, duration: durVal });
+
+  // 如果本次是完攀，把同难度+同风格+同区域的过往"攻克中"记录一并改为完攀
+  if (selResult === 'send') {
+    var updated = 0;
+    for (var i = 0; i < climbs.length - 1; i++) {
+      var c = climbs[i];
+      if (c.result === 'project' && c.grade === selGrade && c.style === selStyle && c.zone === selZone) {
+        c.result = 'send';
+        updated++;
+      }
+    }
+  }
+
   save('climbs', climbs);
 
   selGrade = selStyle = selResult = null;
-  document.querySelectorAll('#gradeGrid .sel, #styleTags .sel, #resultTags .sel').forEach(e=>e.classList.remove('sel'));
+  document.getElementById('gradeSelect').value = '';
+  document.getElementById('styleSelect').value = '';
+  document.querySelectorAll('[data-result]').forEach(function(b){b.classList.remove('sel');});
   document.getElementById('saveBtn').disabled = true;
 
   // Reset zone back to boulder
@@ -572,14 +596,16 @@ function saveClimb() {
   document.querySelectorAll('.zone-btn').forEach(function(b){b.classList.remove('sel');});
   var boulderBtn = document.querySelector('.zone-btn[data-zone="boulder"]');
   if (boulderBtn) boulderBtn.classList.add('sel');
-  renderStyleTags();
+  renderStyleSelect();
 
   // Reset date to today, clear duration
   document.getElementById('logDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('logDuration').value = '';
 
   const fb = document.getElementById('logFeedback');
-  fb.style.display='block'; fb.textContent='已记录！';
+  var msg = '已记录！';
+  if (updated > 0) msg += '（同步更新了 ' + updated + ' 条过往攻克记录为完攀）';
+  fb.style.display='block'; fb.textContent = msg;
   setTimeout(function(){fb.style.display='none'},1500);
   renderHome(); renderHistory(); renderGoals();
   setTimeout(checkReminder, 500);
@@ -773,6 +799,18 @@ function statCard(title, climbs, chartType) {
   const rColors = {send:'#5b9bd5',project:'#7c6ff7'};
   const rLabels = {send:'完攀',project:'攻克中'};
 
+  // 缓存攻克中的线路，供点击查看
+  var projects = climbs.filter(function(c) { return c.result === 'project'; });
+  var sendsList = climbs.filter(function(c) { return c.result !== 'project'; });
+  _projectClimbsCache = projects;
+  _sendClimbsCache = sendsList;
+  var projectHtml = '';
+  if (projects.length > 0) {
+    projectHtml = '<span style="color:'+rColors.project+';font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="showProjectDetail()">'+rLabels.project+' '+projects.length+'</span>';
+  }
+  var sendHtml = sendsList.length > 0 ? '<span style="color:'+rColors.send+';font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px" onclick="showSendDetail()">'+rLabels.send+' '+sendsList.length+'</span>' : '';
+  var sep = sendHtml && projectHtml ? ' <span style="color:var(--border)">|</span> ' : '';
+
   return `<div class="card">
     <h3>${title}</h3>
     <div style="text-align:center;margin:4px 0">
@@ -790,7 +828,7 @@ function statCard(title, climbs, chartType) {
     <div style="line-height:1.8">${shtml||'<span style="color:var(--text2);font-size:12px">-</span>'}</div>
     <div style="margin-top:8px;font-size:11px;color:var(--text2);margin-bottom:2px">攀爬结果</div>
     <div style="font-size:13px">
-      ${RESULTS.filter(r=>rMap[r.key]).map(r=>`<span style="color:${rColors[r.key]};font-weight:700">${rLabels[r.key]} ${rMap[r.key]||0}</span>`).join(' <span style="color:var(--border)">|</span> ') || '<span style="color:var(--text2);font-size:12px">-</span>'}
+      ${sendHtml+sep+projectHtml || '<span style="color:var(--text2);font-size:12px">-</span>'}
     </div>
   </div>`;
 }
@@ -1213,6 +1251,45 @@ function switchView(viewId) {
   if(viewId==='historyView') renderHistory();
   if(viewId==='goalsView') renderGoals();
 }
+
+// 详情模态框
+function renderDetailList(climbs, badgeClass) {
+  var html = '';
+  climbs.sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+  climbs.forEach(function(c) {
+    var styles = ZONE_STYLES[c.zone]||ZONE_STYLES.boulder;
+    var sl = styles.find(function(s){ return s.key===c.style; })?.label||c.style;
+    var zl = c.zone==='rope'?'绳攀':'抱石';
+    var d = new Date(c.date).toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'});
+    html += '<div class="climb-item">'+
+      '<span class="grade-badge '+badgeClass+'">'+c.grade+'</span>'+
+      '<span style="flex:1;font-size:14px">'+sl+'<span class="zone-badge">'+zl+'</span></span>'+
+      '<span style="font-size:12px;color:var(--text2)">'+d+'</span>'+
+    '</div>';
+  });
+  return html;
+}
+
+function showProjectDetail() {
+  var projects = _projectClimbsCache || [];
+  document.getElementById('detailModalTitle').textContent = '🔴 攻克中的线路';
+  document.getElementById('detailModalContent').innerHTML = projects.length > 0 ?
+    renderDetailList(projects, 'project') :
+    '<div class="text-sm" style="text-align:center;padding:16px">没有攻克中的线路</div>';
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function showSendDetail() {
+  var sends = _sendClimbsCache || [];
+  document.getElementById('detailModalTitle').textContent = '💙 完攀的线路';
+  document.getElementById('detailModalContent').innerHTML = sends.length > 0 ?
+    renderDetailList(sends, 'send') :
+    '<div class="text-sm" style="text-align:center;padding:16px">没有完攀的线路</div>';
+  document.getElementById('detailModal').classList.add('show');
+}
+
+function closeDetailModal() { document.getElementById('detailModal').classList.remove('show'); }
+document.getElementById('detailModal').addEventListener('click',function(e){if(e.target===this)closeDetailModal();});
 
 // 模态框关闭
 document.getElementById('goalModal').addEventListener('click',function(e){if(e.target===this)closeGoalModal();});
